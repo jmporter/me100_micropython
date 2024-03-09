@@ -359,6 +359,7 @@ static void esp32_pcnt_print(const mp_print_t *print, mp_obj_t self_in, mp_print
 // static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_pcnt_init_obj, 1, esp32_pcnt_init);
 
 static mp_obj_t esp32_pcnt_deinit(mp_obj_t self_in) {
+    return mp_const_none;
     
 }
 // STATIC mp_obj_t esp32_pcnt_deinit(mp_obj_t self_in) {
