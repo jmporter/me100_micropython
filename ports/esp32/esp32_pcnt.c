@@ -2,6 +2,10 @@
  * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
+/*
+ * This file is part of the MicroPython project, http://micropython.org/
+ *
+ * The MIT License (MIT)
  *
  * Copyright (c) 2021-22 Jonathan Hogg
  *
@@ -50,6 +54,7 @@ typedef struct _esp32_pcnt_irq_obj_t {
 
 typedef struct _esp32_pcnt_channel_obj_t {
     mp_obj_base_t base;
+    uint32_t id; 
     pcnt_channel_handle_t channel;
     struct _esp32_pcnt_channel_obj_t *next;
 } esp32_pcnt_channel_t;
@@ -58,7 +63,7 @@ typedef struct _esp32_pcnt_obj_t {
     mp_obj_base_t base;
     uint32_t id;
     pcnt_unit_handle_t unit;
-    //esp32_pcnt_channel_obj_t *channels;
+    esp32_pcnt_channel_obj_t *channels;
     esp32_pcnt_irq_obj_t *irq;
     struct _esp32_pcnt_obj_t *next;
 } esp32_pcnt_obj_t;
@@ -125,161 +130,6 @@ void esp32_pcnt_unit_init_helper(esp32_pcnt_obj_t *self, size_t n_pos_args, cons
 }
 
 
-// void esp32_pcnt_init_helper(esp32_pcnt_obj_t *self, size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-//     enum {
-//         //ARG_channel,
-//         ARG_edge_pin,
-//         ARG_rising,
-//         ARG_falling,
-//         ARG_mode_pin,
-//         ARG_mode_low,
-//         ARG_mode_high,
-//         ARG_min,
-//         ARG_max,
-//         ARG_filter,
-//         ARG_threshold0,
-//         ARG_threshold1,
-//         ARG_value,
-//     };
-
-//     static const mp_arg_t allowed_args[] = {
-//        // { MP_QSTR_channel,     MP_ARG_KW_ONLY | MP_ARG_INT,   {.u_int = 0} },
-//         // Applies to the channel.
-//         { MP_QSTR_edge_pin,    MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_rising,      MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_falling,     MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_mode_pin,    MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_mode_low,    MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_mode_high,   MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         // Applies to the whole unit.
-//         { MP_QSTR_min,         MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_max,         MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_filter,      MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_threshold0,  MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         { MP_QSTR_threshold1,  MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
-//         // Implicitly zero if min, max, threshold0/1 are set.
-//         { MP_QSTR_value,       MP_ARG_KW_ONLY | MP_ARG_BOOL,  {.u_obj = MP_OBJ_NULL} },
-//     };
-
-//     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-//     mp_arg_parse_all(n_pos_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-//     // The pin/mode_pin, rising, falling, mode_low, mode_high args all apply
-//     // to the channel (defaults to channel zero).
-//     // mp_uint_t channel = args[ARG_channel].u_int;
-//     // if (channel >= PCNT_CHANNEL_MAX) {
-//     //     mp_raise_ValueError(MP_ERROR_TEXT("channel"));
-//     // }
-
-//     if (args[ARG_edge_pin].u_obj != MP_OBJ_NULL || args[ARG_mode_pin].u_obj != MP_OBJ_NULL) {
-//         // If you set mode_pin, you must also set edge_pin.
-//         if (args[ARG_edge_pin].u_obj == MP_OBJ_NULL) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("edge_pin"));
-//         }
-
-//         mp_hal_pin_obj_t pin = -1;
-//         mp_hal_pin_obj_t mode_pin = -1;
-
-//         // Set to None to disable pin/mode_pin.
-//         if (args[ARG_pin].u_obj != mp_const_none) {
-//             pin = mp_hal_get_pin_obj(args[ARG_pin].u_obj);
-//         }
-//         if (args[ARG_mode_pin].u_obj != MP_OBJ_NULL && args[ARG_mode_pin].u_obj != mp_const_none) {
-//             mode_pin = mp_hal_get_pin_obj(args[ARG_mode_pin].u_obj);
-//         }
-
-//         pcnt_set_pin(self->unit, channel, pin, mode_pin);
-//     }
-
-//     if (
-//         args[ARG_rising].u_obj != MP_OBJ_NULL || args[ARG_falling].u_obj != MP_OBJ_NULL ||
-//         args[ARG_mode_low].u_obj != MP_OBJ_NULL || args[ARG_mode_high].u_obj != MP_OBJ_NULL
-//         ) {
-//         mp_uint_t rising = args[ARG_rising].u_obj == MP_OBJ_NULL ? PCNT_COUNT_DIS : mp_obj_get_int(args[ARG_rising].u_obj);
-//         mp_uint_t falling = args[ARG_falling].u_obj == MP_OBJ_NULL ? PCNT_COUNT_DIS : mp_obj_get_int(args[ARG_falling].u_obj);
-//         mp_uint_t mode_low = args[ARG_mode_low].u_obj == MP_OBJ_NULL ? PCNT_MODE_KEEP : mp_obj_get_int(args[ARG_mode_low].u_obj);
-//         mp_uint_t mode_high = args[ARG_mode_high].u_obj == MP_OBJ_NULL ? PCNT_MODE_KEEP : mp_obj_get_int(args[ARG_mode_high].u_obj);
-//         if (rising >= PCNT_COUNT_MAX) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("rising"));
-//         }
-//         if (falling >= PCNT_COUNT_MAX) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("falling"));
-//         }
-//         if (mode_low >= PCNT_MODE_MAX) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("mode_low"));
-//         }
-//         if (mode_high >= PCNT_MODE_MAX) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("mode_high"));
-//         }
-//         pcnt_set_mode(self->unit, channel, rising, falling, mode_high, mode_low);
-//     }
-
-//     // The rest of the arguments apply to the whole unit.
-
-//     if (args[ARG_filter].u_obj != MP_OBJ_NULL) {
-//         mp_uint_t filter = mp_obj_get_int(args[ARG_filter].u_obj);
-//         if (filter > 1023) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("filter"));
-//         }
-//         if (filter) {
-//             check_esp_err(pcnt_set_filter_value(self->unit, filter));
-//             check_esp_err(pcnt_filter_enable(self->unit));
-//         } else {
-//             check_esp_err(pcnt_filter_disable(self->unit));
-//         }
-//     }
-
-//     bool clear = false;
-//     if (args[ARG_value].u_obj != MP_OBJ_NULL) {
-//         mp_int_t value = mp_obj_get_int(args[ARG_value].u_obj);
-//         if (value != 0) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("value"));
-//         }
-//         clear = true;
-//     }
-
-//     if (args[ARG_min].u_obj != MP_OBJ_NULL) {
-//         mp_int_t minimum = mp_obj_get_int(args[ARG_min].u_obj);
-//         if (minimum < -32768 || minimum > 0) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("minimum"));
-//         }
-//         check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_L_LIM, minimum));
-//         clear = true;
-//     }
-
-//     if (args[ARG_max].u_obj != MP_OBJ_NULL) {
-//         mp_int_t maximum = mp_obj_get_int(args[ARG_max].u_obj);
-//         if (maximum < 0 || maximum > 32767) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("maximum"));
-//         }
-//         check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_H_LIM, maximum));
-//         clear = true;
-//     }
-
-//     if (args[ARG_threshold0].u_obj != MP_OBJ_NULL) {
-//         mp_int_t threshold0 = mp_obj_get_int(args[ARG_threshold0].u_obj);
-//         if (threshold0 < -32768 || threshold0 > 32767) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("threshold0"));
-//         }
-//         check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_THRES_0, threshold0));
-//         clear = true;
-//     }
-
-//     if (args[ARG_threshold1].u_obj != MP_OBJ_NULL) {
-//         mp_int_t threshold1 = mp_obj_get_int(args[ARG_threshold1].u_obj);
-//         if (threshold1 < -32768 || threshold1 > 32767) {
-//             mp_raise_ValueError(MP_ERROR_TEXT("threshold1"));
-//         }
-//         check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_THRES_1, threshold1));
-//         clear = true;
-//     }
-
-//     if (clear) {
-//         check_esp_err(pcnt_counter_clear(self->unit));
-//     }
-// }
-
-// Disable any events, and remove the ISR handler for this unit.
 // STATIC void esp32_pcnt_disable_events_for_unit(esp32_pcnt_obj_t *self) {
 //     if (!self->irq) {
 //         return;
@@ -296,106 +146,86 @@ void esp32_pcnt_unit_init_helper(esp32_pcnt_obj_t *self, size_t n_pos_args, cons
 //     self->irq->trigger = 0;
 // }
 
-
-
 static mp_obj_t esp32_pcnt_make_new(const mp_obj_type_t *type, size_t n_pos_args, size_t n_kw_args, const mp_obj_t *args) {
-    
-    if (n_pos_args < 1) {
+    if (n_pos_args < 1) { 
         mp_raise_TypeError(MP_ERROR_TEXT("id"));
     }
 
-    uint32_t id = mp_obj_get_int(args[0]);
-
-    // Try and find an existing instance for this unit.
-    esp32_pcnt_obj_t *self = MP_STATE_PORT(esp32_pcnt_obj_head);
-    while (self) {
-        if (self->id == id) {
+    mp_uint_t id = mp_obj_get_int(args[0]);
+    
+    esp32_pcnt_obj_t *self = MP_STATE_PORT(esp_pcnt_obj_head);
+      
+    while (self){
+        if(self->id == id) { 
             break;
         }
         self = self->next;
     }
-
-    if (!self) {
-        // Unused id, create a new esp32_pcnt_obj_t instance and put it at
-        // the head of the list.
+    
+    if(!self) { 
         self = mp_obj_malloc(esp32_pcnt_obj_t, &esp32_pcnt_type);
-        self->id = id;
         self->irq = NULL;
+        self->channels = NULL;
         self->next = MP_STATE_PORT(esp32_pcnt_obj_head);
         MP_STATE_PORT(esp32_pcnt_obj_head) = self;
-
-
-        // // Ensure the unit is in a known (deactivated) state.
-        // esp32_pcnt_deinit(MP_OBJ_FROM_PTR(self));
+    }else { 
+        esp32_pcnt_deinit(MP_OBJ_FROM_PTR(self));
     }
-    mp_map_t kw_args;
+
+    mp_map_t kwargs;
     mp_map_init_fixed_table(&kw_args, n_kw_args, args + n_pos_args);
     esp32_pcnt_unit_init_helper(self, 0, args + n_pos_args, &kw_args);
-
-    // Ensure the global PCNT ISR service is installed.
-    // if (!pcnt_isr_service_installed) {
-    //     check_esp_err(pcnt_isr_service_install(ESP_INTR_FLAG_IRAM));
-    //     pcnt_isr_service_installed = true;
-    // }
-
-    // And enable for this unit.
-    // check_esp_err(pcnt_intr_enable(self->unit));
-
+       
     return MP_OBJ_FROM_PTR(self);
 }
 
+
+
 static void esp32_pcnt_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     esp32_pcnt_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "PCNT(%u)", self->id);
+    mp_printf(print, "PCNT(%u)", self->unit);
 }
 
+static mp_obj_t esp32_pcnt_add_channel(size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum{
+        ARG_edge_pin,
+        ARG_edge_action,
+        ARG_level_pin,
+        ARG_level_action
+        };
 
-// static mp_obj_t esp32_pcnt_init(size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-//     esp32_pcnt_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-//     esp32_pcnt_init_helper(self, n_pos_args - 1, pos_args + 1, kw_args);
-//     return mp_const_none;
-// }
-  
-// static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_pcnt_init_obj, 1, esp32_pcnt_init);
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_edge_pin,      MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_level_pin,     MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_edge_action,   MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_level_action,  MP_ARG_KW_ONLY | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
+    };
+
+    esp32_pcnt_obj_t *self = pos_args[0];
+    mp_uint_t id = pos_args[1];
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_pos_args -2 , pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    channel_self = self->channels;
+    while(!channel_self) {
+        channel_self
+    }
+
+
+    if(!self->channels) { 
+        self->channels = mp_obj_malloc(esp32_pcnt_channel_obj_t, &mp_obj_type)
+        channel =
+    }
+}
 
 static mp_obj_t esp32_pcnt_deinit(mp_obj_t self_in) {
     return mp_const_none;
     
 }
-// STATIC mp_obj_t esp32_pcnt_deinit(mp_obj_t self_in) {
-//     esp32_pcnt_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-//     // Remove IRQ and events.
-//     esp32_pcnt_disable_events_for_unit(self);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_pcnt_deinit_obj, esp32_pcnt_deinit);
 
-//     // Deactivate both channels.
-//     pcnt_config_t channel_config = {
-//         .unit = self->unit,
-//         .pulse_gpio_num = PCNT_PIN_NOT_USED,
-//         .pos_mode = PCNT_COUNT_DIS,
-//         .neg_mode = PCNT_COUNT_DIS,
-//         .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-//         .lctrl_mode = PCNT_MODE_KEEP,
-//         .hctrl_mode = PCNT_MODE_KEEP,
-//         .counter_l_lim = 0,
-//         .counter_h_lim = 0,
-//     };
-//     for (pcnt_channel_t channel = 0; channel <= 1; ++channel) {
-//         channel_config.channel = channel;
-//         check_esp_err(pcnt_unit_config(&channel_config));
-//     }
-
-//     // Disable filters & thresholds, pause & clear.
-//     check_esp_err(pcnt_filter_disable(self->unit));
-//     check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_THRES_0, 0));
-//     check_esp_err(pcnt_set_event_value(self->unit, PCNT_EVT_THRES_1, 0));
-//     check_esp_err(pcnt_counter_pause(self->unit));
-//     check_esp_err(pcnt_counter_clear(self->unit));
-
-//     return mp_const_none;
-// }
-
-// STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_pcnt_deinit_obj, esp32_pcnt_deinit);
 
 // STATIC mp_obj_t esp32_pcnt_value(size_t n_args, const mp_obj_t *pos_args) {
 //     esp32_pcnt_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
